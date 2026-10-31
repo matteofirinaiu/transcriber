@@ -10,8 +10,8 @@ enum Maker {
 
     static let name = "Matteo Firinaiu"
     static let profiles = [
-        Profile(title: "Instagram", url: URL(string: "https://www.instagram.com/matteofirinaiu")!),
-        Profile(title: "LinkedIn", url: URL(string: "https://www.linkedin.com/in/matteofirinaiu")!),
+        Profile(title: "Instagram", url: URL(string: "https://www.instagram.com/matteo.firinaiu")!),
+        Profile(title: "LinkedIn", url: URL(string: "https://www.linkedin.com/in/matteo-firinaiu/")!),
         Profile(title: "GitHub", url: URL(string: "https://github.com/matteofirinaiu")!),
     ]
 }

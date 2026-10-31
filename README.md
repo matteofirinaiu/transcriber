@@ -4,7 +4,7 @@
 
 A free Mac app that records your lectures and meetings and turns them into text, **entirely on your Mac**. No account, no subscription, no cloud: the audio never leaves your computer.
 
-Proudly made by **Matteo Firinaiu** · [Instagram](https://www.instagram.com/matteofirinaiu) · [LinkedIn](https://www.linkedin.com/in/matteofirinaiu) · [GitHub](https://github.com/matteofirinaiu)
+Proudly made by **Matteo Firinaiu** · [Instagram](https://www.instagram.com/matteo.firinaiu) · [LinkedIn](https://www.linkedin.com/in/matteo-firinaiu/) · [GitHub](https://github.com/matteofirinaiu)
 
 ![Transcriber showing a finished transcript with three speakers](docs/screenshot.png)
 
@@ -24,7 +24,11 @@ You need a Mac with Apple silicon (M1 or newer) and macOS 26 Tahoe or newer.
 1. **[Download Transcriber.dmg](https://github.com/matteofirinaiu/transcriber/releases/latest/download/Transcriber.dmg)** (about 13 MB).
 2. Open it and drag **Transcriber** onto the **Applications** folder.
 3. Open Transcriber from Applications. If it opens, you're done. More likely, the first time macOS blocks it because the app isn't signed with a paid Apple developer account: click **Done**, not "Move to Trash".
-4. Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to the message about Transcriber. Confirm with your password or Touch ID.
+4. Open **System Settings → Privacy & Security** and scroll down to the **Security** section. Next to "“Transcriber” was blocked to protect your Mac." click **Open Anyway**, then confirm with your password or Touch ID. The button only appears after you've tried to open the app once.
+
+   <img src="docs/open-anyway.png" width="468" alt="The Open Anyway button in System Settings, under Privacy & Security">
+
+5. If Transcriber doesn't open by itself, open it again from Applications.
 
 You only do this once per version. If macOS says the app "is damaged and can't be opened", run this in Terminal and open the app again:
 
