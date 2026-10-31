@@ -51,6 +51,7 @@ final class AppModel {
         static let draftLanguage = "draftLanguage"
         static let inputDevice = "inputDeviceUID"
         static let folder = "transcriptsFolder"
+        static let welcomeShown = "welcomeShown"
     }
 
     // MARK: Settings
@@ -77,6 +78,8 @@ final class AppModel {
     var selection: SidebarItem? = .recorder
     var searchText = ""
     var alert: AppAlert?
+    /// The welcome pop-up, shown only at the first launch.
+    var showWelcome = false
 
     // MARK: Recording
 
@@ -122,12 +125,19 @@ final class AppModel {
     /// Call once at launch.
     func launch() {
         libraryOverride = Autotest.options?.libraryURL
+        showWelcome = Autotest.options == nil && !UserDefaults.standard.bool(forKey: Keys.welcomeShown)
         reloadLibrary()
         scanPending()
         downloadModelsIfNeeded()
         if let options = Autotest.options {
             Task { await Autotest.run(self, options) }
         }
+    }
+
+    /// Closes the welcome pop-up for good. Automated tests share the settings of the real app, so they don't save it.
+    func closeWelcome() {
+        showWelcome = false
+        if Autotest.options == nil { UserDefaults.standard.set(true, forKey: Keys.welcomeShown) }
     }
 
     // MARK: - Library

@@ -1,4 +1,4 @@
-// Draws the Transcriber icon (sound waves turning into lines of text) as a 1024×1024 PNG.
+// Draws the Transcriber icon (a sound wave made of vertical bars) as a 1024×1024 PNG.
 // Usage: swift scripts/make_icon.swift output.png
 import AppKit
 
@@ -30,22 +30,15 @@ let gradient = NSGradient(colors: [
 ])!
 gradient.draw(in: shape, angle: -90)
 
-// On the left, the waves of the voice...
+// The sound wave: rounded white bars of different heights, centered on the icon.
 NSColor.white.setFill()
-let barWidth: CGFloat = 46
-let heights: [CGFloat] = [150, 300, 420, 240]
+let barWidth: CGFloat = 56
+let spacing: CGFloat = 92
+let heights: [CGFloat] = [200, 360, 540, 640, 470, 320, 190]
+let firstX = 512 - (CGFloat(heights.count - 1) * spacing + barWidth) / 2
 for (index, height) in heights.enumerated() {
-    let x = 211 + CGFloat(index) * 82
-    let rect = NSRect(x: x, y: 512 - height / 2, width: barWidth, height: height)
+    let rect = NSRect(x: firstX + CGFloat(index) * spacing, y: 512 - height / 2, width: barWidth, height: height)
     NSBezierPath(roundedRect: rect, xRadius: barWidth / 2, yRadius: barWidth / 2).fill()
-}
-
-// ...on the right, the lines of text.
-NSColor.white.withAlphaComponent(0.92).setFill()
-let lines: [(y: CGFloat, width: CGFloat)] = [(612, 250), (512, 200), (412, 230)]
-for line in lines {
-    let rect = NSRect(x: 563, y: line.y - 23, width: line.width, height: 46)
-    NSBezierPath(roundedRect: rect, xRadius: 23, yRadius: 23).fill()
 }
 
 NSGraphicsContext.restoreGraphicsState()

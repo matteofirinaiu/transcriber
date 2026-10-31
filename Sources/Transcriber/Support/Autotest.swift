@@ -55,6 +55,13 @@ enum Autotest {
 
         var report: [String: Any] = [:]
         try? await Task.sleep(for: .seconds(1)) // lets the window appear
+        if options.snapshotsURL != nil {
+            model.showWelcome = true
+            try? await Task.sleep(for: .seconds(1))
+            snapshot("0-welcome", options, sheet: true)
+            model.closeWelcome()
+            try? await Task.sleep(for: .seconds(1))
+        }
         await model.startRecording()
         report["recordingStarted"] = model.phase == .recording
 
@@ -90,10 +97,11 @@ enum Autotest {
         NSApp.terminate(nil)
     }
 
-    /// Takes a picture of the main window (no screen recording permission needed).
-    private static func snapshot(_ name: String, _ options: Options) {
+    /// Takes a picture of the main window, or of the sheet open on it (no screen recording permission needed).
+    private static func snapshot(_ name: String, _ options: Options, sheet: Bool = false) {
         guard let directory = options.snapshotsURL,
-              let window = NSApp.windows.first(where: { $0.isVisible && $0.title == "Transcriber" }),
+              let main = NSApp.windows.first(where: { $0.isVisible && $0.title == "Transcriber" }),
+              let window = sheet ? main.attachedSheet : main,
               let view = window.contentView?.superview ?? window.contentView,
               let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds)
         else { return }

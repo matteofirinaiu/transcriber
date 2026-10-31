@@ -30,6 +30,9 @@ struct ContentView: View {
         } message: { alert in
             Text(alert.message)
         }
+        .sheet(isPresented: Binding(get: { model.showWelcome }, set: { if !$0 { model.closeWelcome() } })) {
+            WelcomeView(onClose: model.closeWelcome)
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             model.reloadLibrary() // files changed or deleted in the Finder
             model.scanPending()

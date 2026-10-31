@@ -4,6 +4,8 @@
 
 A free Mac app that records your lectures and meetings and turns them into text, **entirely on your Mac**. No account, no subscription, no cloud: the audio never leaves your computer.
 
+Proudly made by **Matteo Firinaiu** · [Instagram](https://www.instagram.com/matteofirinaiu) · [LinkedIn](https://www.linkedin.com/in/matteofirinaiu) · [GitHub](https://github.com/matteofirinaiu)
+
 ![Transcriber showing a finished transcript with three speakers](docs/screenshot.png)
 
 ## What it does
@@ -21,7 +23,7 @@ You need a Mac with Apple silicon (M1 or newer) and macOS 26 Tahoe or newer.
 
 1. **[Download Transcriber.dmg](https://github.com/matteofirinaiu/transcriber/releases/latest/download/Transcriber.dmg)** (about 13 MB).
 2. Open it and drag **Transcriber** onto the **Applications** folder.
-3. Open Transcriber from Applications. The first time, macOS blocks it because the app isn't signed with a paid Apple developer account. Click **Done**, not "Move to Trash".
+3. Open Transcriber from Applications. If it opens, you're done. More likely, the first time macOS blocks it because the app isn't signed with a paid Apple developer account: click **Done**, not "Move to Trash".
 4. Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to the message about Transcriber. Confirm with your password or Touch ID.
 
 You only do this once per version. If macOS says the app "is damaged and can't be opened", run this in Terminal and open the app again:
@@ -161,7 +163,7 @@ Resources/                 Info.plist, entitlements, icon, credits
 
 ## Credits
 
-Transcriber is free and open source under the [MIT License](LICENSE). It's built on:
+Transcriber is made by Matteo Firinaiu and is free and open source under the [MIT License](LICENSE). It's built on:
 
 - [FluidAudio](https://github.com/FluidInference/FluidAudio) by FluidInference (Apache 2.0), which runs the models on the Neural Engine.
 - [Parakeet Ultra](https://huggingface.co/FluidInference/parakeet-ultra-coreml) (CC BY 4.0), based on NVIDIA Parakeet TDT 0.6B v3.
