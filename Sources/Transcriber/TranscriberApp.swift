@@ -24,7 +24,7 @@ struct TranscriberApp: App {
                     Task { await model.toggleRecording() }
                 }
                 .keyboardShortcut("r")
-                .disabled(model.phase == .starting || model.phase == .stopping)
+                .disabled(!(model.phase == .recording || model.canStartRecording))
             }
         }
 

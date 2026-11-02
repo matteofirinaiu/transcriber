@@ -49,7 +49,6 @@ final class AppModel {
     static let shared = AppModel()
 
     private enum Keys {
-        static let draftLanguage = "draftLanguage"
         static let inputDevice = "inputDeviceUID"
         static let folder = "transcriptsFolder"
         static let welcomeShown = "welcomeShown"
@@ -57,15 +56,9 @@ final class AppModel {
 
     // MARK: Settings
 
-    var draftLanguage: DraftLanguage {
-        didSet { UserDefaults.standard.set(draftLanguage.rawValue, forKey: Keys.draftLanguage) }
-    }
     var inputDeviceUID: String? {
         didSet { UserDefaults.standard.set(inputDeviceUID, forKey: Keys.inputDevice) }
     }
-    /// How many people speak in the next recording (`nil` = the app counts them).
-    /// Not remembered: it goes back to Automatic after every recording, so an old number can't spoil the next one.
-    var expectedSpeakers: Int?
     var transcriptsFolder: URL {
         didSet {
             UserDefaults.standard.set(transcriptsFolder.path, forKey: Keys.folder)
@@ -90,8 +83,6 @@ final class AppModel {
     private(set) var level: Float = 0
     private(set) var liveSegments: [DraftSegment] = []
     private(set) var volatileText = ""
-    private(set) var liveLanguage: DraftLanguage = .automatic
-    private(set) var liveBusy = false
     private(set) var liveStatus: String?
 
     // MARK: Final version
@@ -112,16 +103,16 @@ final class AppModel {
 
     init() {
         let defaults = UserDefaults.standard
-        draftLanguage = DraftLanguage(rawValue: defaults.string(forKey: Keys.draftLanguage) ?? "") ?? .automatic
         inputDeviceUID = defaults.string(forKey: Keys.inputDevice)
         transcriptsFolder = defaults.string(forKey: Keys.folder).map { URL(fileURLWithPath: $0, isDirectory: true) }
             ?? TranscriptLibrary.defaultFolder
         engine = ParakeetEngine()
         live = LiveTranscriber(engine: engine)
+        // Known right away, so the window never flashes the download screen when the models are already here.
+        if engine.isDownloaded { finalModel = .ready }
 
         live.onSegment = { [weak self] segment in self?.liveSegments.append(segment) }
         live.onVolatile = { [weak self] text in self?.volatileText = text }
-        live.onStatus = { [weak self] status in self?.liveStatus = status }
     }
 
     /// Call once at launch.
@@ -221,6 +212,9 @@ final class AppModel {
         ParagraphBuilder.sentences.build(liveSegments.map(\.timedText))
     }
 
+    /// Recording waits for the speech models: without them there would be neither a live draft nor a final version.
+    var canStartRecording: Bool { phase == .idle && finalModel == .ready }
+
     func toggleRecording() async {
         switch phase {
         case .idle: await startRecording()
@@ -230,7 +224,7 @@ final class AppModel {
     }
 
     func startRecording() async {
-        guard phase == .idle else { return }
+        guard canStartRecording else { return }
         phase = .starting
         let input: AudioInput
         if let file = Autotest.options?.injectURL {
@@ -249,7 +243,7 @@ final class AppModel {
 
         let session: RecordingSession
         do {
-            session = try RecordingSession(draftLanguage: draftLanguage.rawValue, expectedSpeakers: expectedSpeakers, input: input)
+            session = try RecordingSession(input: input)
             try session.start(
                 deviceUID: inputDeviceUID,
                 onLevel: { [weak self] value in Task { @MainActor in self?.level = value } },
@@ -271,28 +265,13 @@ final class AppModel {
         sleepActivity = ProcessInfo.processInfo.beginActivity(
             options: [.idleSystemSleepDisabled, .userInitiated], reason: "Recording audio to transcribe")
         startDraftAutosave(for: session)
-        await startLive(draftLanguage, for: session)
+        await startLive(for: session)
     }
 
-    /// Changes the draft's language, even during a recording.
-    func switchLiveLanguage(_ language: DraftLanguage) async {
-        draftLanguage = language
-        guard phase == .recording, let session, language != liveLanguage, !liveBusy else { return }
-        await startLive(language, for: session)
-    }
-
-    private func startLive(_ requested: DraftLanguage, for session: RecordingSession) async {
-        // Automatic uses Parakeet: until the model is downloaded, the draft stays in English.
-        let language = requested == .automatic && finalModel != .ready ? .english : requested
-        liveBusy = true
-        defer { liveBusy = false }
+    private func startLive(for session: RecordingSession) async {
         do {
-            try await live.start(language: language) { feed in session.attachLiveFeed(feed) }
-            liveLanguage = language
-            if language != requested {
-                liveStatus = "The Automatic draft will be available once the model finishes downloading. For now the draft is in English."
-            }
-            // If the recording ended in the meantime, close the recognizer right away.
+            try await live.start { feed in session.attachLiveFeed(feed) }
+            // If the recording ended in the meantime, close the draft right away.
             if self.session !== session { await live.stop() }
         } catch {
             liveStatus = "Live draft unavailable (\(error.localizedDescription)). Recording continues and you'll still get the final version."
@@ -309,7 +288,6 @@ final class AppModel {
         endSleepActivity()
         self.session = nil
         level = 0
-        expectedSpeakers = nil
         phase = .idle
         enqueueFinal(folder: session.folder, meta: session.meta, draft: liveSegments, reveal: true)
     }

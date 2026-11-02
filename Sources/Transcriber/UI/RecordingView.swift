@@ -7,7 +7,11 @@ struct RecordingView: View {
     var body: some View {
         switch model.phase {
         case .idle, .starting:
-            IdleRecorder()
+            if model.finalModel == .ready {
+                IdleRecorder()
+            } else {
+                ModelSetupView(state: model.finalModel, retry: model.downloadModelsIfNeeded)
+            }
         case .recording, .stopping:
             ActiveRecorder()
         }
@@ -18,8 +22,7 @@ private struct IdleRecorder: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        @Bindable var model = model
-        VStack(spacing: 22) {
+        VStack(spacing: 24) {
             Spacer()
             Button {
                 Task { await model.startRecording() }
@@ -27,10 +30,10 @@ private struct IdleRecorder: View {
                 ZStack {
                     Circle()
                         .fill(.red.gradient)
-                        .frame(width: 96, height: 96)
-                        .shadow(color: .red.opacity(0.3), radius: 10, y: 4)
+                        .frame(width: 112, height: 112)
+                        .shadow(color: .red.opacity(0.35), radius: 14, y: 6)
                     Image(systemName: "mic.fill")
-                        .font(.system(size: 38, weight: .semibold))
+                        .font(.system(size: 44, weight: .semibold))
                         .foregroundStyle(.white)
                 }
             }
@@ -38,37 +41,77 @@ private struct IdleRecorder: View {
             .disabled(model.phase == .starting)
             .accessibilityLabel("Start recording")
 
-            Text(model.phase == .starting ? "Starting…" : "Record")
-                .font(.title2.weight(.semibold))
-
-            VStack(alignment: .leading, spacing: 12) {
-                Picker("Live draft language", selection: $model.draftLanguage) {
-                    ForEach(DraftLanguage.allCases) { language in
-                        Text(language.label).tag(language)
-                    }
-                }
-                .pickerStyle(.segmented)
-                Picker("Speakers", selection: $model.expectedSpeakers) {
-                    Text("Automatic").tag(Int?.none)
-                    ForEach(2...8, id: \.self) { count in
-                        Text("\(count)").tag(Optional(count))
-                    }
-                }
-                .help("If you know how many people will speak, choose it: telling the voices apart gets more accurate.")
-                MicrophonePicker()
+            VStack(spacing: 6) {
+                Text(model.phase == .starting ? "Starting…" : "Record")
+                    .font(.title.weight(.semibold))
+                Text("A lecture or a meeting. The language is detected by itself.")
+                    .foregroundStyle(.secondary)
             }
-            .frame(width: 420)
 
-            FinalModelStatusView()
-                .font(.callout)
+            MicrophonePicker()
+                .frame(width: 320)
 
-            Text("Record a lecture or a meeting. With Automatic, the live draft detects the language by itself. When you stop, the final version also tells the voices apart: Speaker 1, Speaker 2…\nKeep your MacBook open while recording: with the lid closed, the Mac goes to sleep.")
+            Spacer()
+
+            Text("When you stop, Transcriber writes the final version and tells the voices apart.\nKeep your MacBook open while recording: with the lid closed, the Mac goes to sleep.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            Spacer()
         }
         .padding(40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// Until the speech models are on the Mac, this takes the place of the record button: without them
+/// there would be neither the live draft nor the final version.
+struct ModelSetupView: View {
+    let state: FinalModelState
+    let retry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 22) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 112, height: 112)
+            VStack(spacing: 10) {
+                Text("Getting Transcriber ready")
+                    .font(.largeTitle.weight(.semibold))
+                Text("Transcriber is downloading its speech models, about 640 MB. It happens only once: after that, everything works offline.")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: 480)
+            }
+
+            switch state {
+            case .failed(let message):
+                VStack(spacing: 12) {
+                    Label("The download stopped: \(message)", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                        .frame(maxWidth: 480)
+                    Button("Try Again", action: retry)
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                }
+            case .downloading(let fraction):
+                VStack(spacing: 8) {
+                    ProgressView(value: fraction)
+                        .frame(width: 420)
+                    Text("\(Int(fraction * 100))%")
+                        .font(.title2.weight(.semibold).monospacedDigit())
+                }
+            default:
+                ProgressView()
+                    .progressViewStyle(.linear)
+                    .frame(width: 420)
+            }
+
+            Label("Keep Transcriber open and stay on Wi-Fi. You can record as soon as it's done.", systemImage: "wifi")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+        .multilineTextAlignment(.center)
+        .padding(48)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -90,23 +133,9 @@ private struct ActiveRecorder: View {
                     }
                 }
                 LevelMeter(level: model.level)
-                    .frame(width: 110, height: 8)
+                    .frame(width: 140, height: 8)
 
                 Spacer()
-
-                Picker("Draft language", selection: Binding(
-                    get: { model.liveLanguage },
-                    set: { language in Task { await model.switchLiveLanguage(language) } }
-                )) {
-                    ForEach(DraftLanguage.allCases) { language in
-                        Text(language.label).tag(language)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 290)
-                .disabled(model.liveBusy || model.phase != .recording)
-                .help("Language of the live draft. Automatic detects it by itself; the final version always does.")
 
                 Button {
                     Task { await model.stopRecording() }
@@ -115,6 +144,7 @@ private struct ActiveRecorder: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
+                .controlSize(.large)
                 .disabled(model.phase != .recording)
             }
             .padding(.horizontal, 20)
@@ -212,33 +242,5 @@ struct MicrophonePicker: View {
             }
         }
         .onAppear { devices = AudioDevices.inputDevices() }
-    }
-}
-
-struct FinalModelStatusView: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        switch model.finalModel {
-        case .checking:
-            Text("Checking the transcription model…")
-                .foregroundStyle(.secondary)
-        case .downloading(let fraction):
-            HStack {
-                ProgressView(value: fraction)
-                    .frame(width: 120)
-                Text("Downloading the transcription model (only once): \(Int(fraction * 100))%")
-                    .foregroundStyle(.secondary)
-            }
-        case .ready:
-            Label("Transcription model ready", systemImage: "checkmark.circle")
-                .foregroundStyle(.secondary)
-        case .failed(let message):
-            HStack {
-                Label("Model download failed: \(message)", systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.orange)
-                Button("Try Again") { model.downloadModelsIfNeeded() }
-            }
-        }
     }
 }

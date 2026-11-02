@@ -19,7 +19,3 @@ These models aren't part of this repository or of the app. Transcriber downloads
 | Parakeet Ultra speech recognition, based on NVIDIA Parakeet TDT 0.6B v3 and converted to Core ML by FluidInference | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | [FluidInference/parakeet-ultra-coreml](https://huggingface.co/FluidInference/parakeet-ultra-coreml) |
 | Silero VAD voice detector, converted to Core ML by FluidInference | MIT | [FluidInference/silero-vad-coreml](https://huggingface.co/FluidInference/silero-vad-coreml) |
 | Speaker separation models from pyannote "community-1", converted to Core ML by FluidInference | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | [FluidInference/speaker-diarization-coreml](https://huggingface.co/FluidInference/speaker-diarization-coreml) |
-
-## Part of macOS
-
-The English and Italian live drafts use Apple's Speech framework (SpeechAnalyzer), which comes with macOS.

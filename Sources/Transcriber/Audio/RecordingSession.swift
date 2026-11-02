@@ -16,9 +16,9 @@ final class RecordingSession: @unchecked Sendable {
     private var reportedWriteError = false
     private var onFailure: (@Sendable (Error) -> Void)?
 
-    init(draftLanguage: String, expectedSpeakers: Int?, input: AudioInput = MicRecorder()) throws {
+    init(input: AudioInput = MicRecorder()) throws {
         self.input = input
-        let meta = RecordingMeta(draftLanguage: draftLanguage, expectedSpeakers: expectedSpeakers)
+        let meta = RecordingMeta()
         let folder = try RecordingFolder.create(meta: meta)
         self.meta = meta
         self.folder = folder

@@ -1,22 +1,13 @@
-import Speech
 import SwiftUI
 import TranscriberCore
 
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
-    @State private var liveStatus: [DraftLanguage: String] = [:]
-    @State private var downloading: DraftLanguage?
 
     var body: some View {
-        @Bindable var model = model
         @Bindable var updates = model.updates
         Form {
             Section("Recording") {
-                Picker("Default draft language", selection: $model.draftLanguage) {
-                    ForEach(DraftLanguage.allCases) { language in
-                        Text(language.label).tag(language)
-                    }
-                }
                 MicrophonePicker()
             }
 
@@ -46,58 +37,18 @@ struct SettingsView: View {
             }
 
             Section {
-                LabeledContent("Final version and Automatic draft (Parakeet)") {
-                    FinalModelStatusView()
-                }
-                ForEach(DraftLanguage.appleLanguages) { language in
-                    LabeledContent("Live draft with macOS · \(language.label)") {
-                        HStack {
-                            Text(liveStatus[language] ?? "…")
-                                .foregroundStyle(.secondary)
-                            if liveStatus[language] == "Not downloaded" {
-                                Button("Download") { download(language) }
-                                    .disabled(downloading != nil)
-                            }
-                        }
-                    }
+                LabeledContent("Speech models") {
+                    ModelStatus()
                 }
             } header: {
                 Text("Models")
             } footer: {
-                Text("Everything runs on your Mac: no account, no tokens, and the audio never leaves your computer. The models download only once (Parakeet and the voice detector from Hugging Face, the macOS languages from Apple).")
+                Text("Everything runs on your Mac: no account, no tokens, and the audio never leaves your computer. The speech models download only once, from Hugging Face.")
                     .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
         .frame(width: 560)
-        .task { await refreshLiveStatus() }
-    }
-
-    private func refreshLiveStatus() async {
-        for language in DraftLanguage.appleLanguages {
-            liveStatus[language] = switch await LiveTranscriber.assetStatus(for: language) {
-            case .installed: "Ready"
-            case .downloading: "Downloading…"
-            case .supported: "Not downloaded"
-            case .unsupported: "Not supported"
-            @unknown default: "Unknown"
-            }
-        }
-    }
-
-    private func download(_ language: DraftLanguage) {
-        downloading = language
-        Task {
-            do {
-                try await LiveTranscriber.installAssets(for: language) { status in
-                    liveStatus[language] = status ?? "Ready"
-                }
-            } catch {
-                model.alert = AppAlert(title: "Download failed", message: error.localizedDescription)
-            }
-            downloading = nil
-            await refreshLiveStatus()
-        }
     }
 
     private func chooseFolder() {
@@ -109,6 +60,36 @@ struct SettingsView: View {
         panel.prompt = "Use This Folder"
         if panel.runModal() == .OK, let url = panel.url {
             model.transcriptsFolder = url
+        }
+    }
+}
+
+private struct ModelStatus: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        switch model.finalModel {
+        case .checking:
+            Text("Checking…")
+                .foregroundStyle(.secondary)
+        case .downloading(let fraction):
+            HStack {
+                ProgressView(value: fraction)
+                    .frame(width: 120)
+                Text("\(Int(fraction * 100))%")
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+        case .ready:
+            Label("Ready", systemImage: "checkmark.circle")
+                .foregroundStyle(.secondary)
+        case .failed(let message):
+            HStack {
+                Label("Download failed", systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+                    .help(message)
+                Button("Try Again") { model.downloadModelsIfNeeded() }
+            }
         }
     }
 }

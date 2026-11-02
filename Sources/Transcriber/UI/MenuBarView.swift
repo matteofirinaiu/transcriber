@@ -9,11 +9,13 @@ struct MenuBarView: View {
         switch model.phase {
         case .recording:
             Button("Stop Recording") { Task { await model.stopRecording() } }
-        case .idle:
+        case .idle where model.canStartRecording:
             Button("Start Recording") {
                 showMainWindow()
                 Task { await model.startRecording() }
             }
+        case .idle:
+            Text("Downloading the speech models…")
         case .starting, .stopping:
             Text("One moment…")
         }

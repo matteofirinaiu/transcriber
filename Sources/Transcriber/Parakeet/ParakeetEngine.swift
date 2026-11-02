@@ -58,8 +58,8 @@ actor ParakeetEngine {
         vad = nil
     }
 
-    /// Who speaks and when, over the whole file. `expectedSpeakers` is the number of people given
-    /// before recording; without it, the model counts them.
+    /// Who speaks and when, over the whole file. Without `expectedSpeakers` (only the `--speakers` test
+    /// option and recordings from before 1.3.0 have it), the model counts the people itself.
     func diarize(fileURL: URL, expectedSpeakers: Int?, progress: @escaping @Sendable (Double) -> Void) async throws -> [SpeakerSpan] {
         var config = OfflineDiarizerConfig.default
         config.clustering.numSpeakers = expectedSpeakers

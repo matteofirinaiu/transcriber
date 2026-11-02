@@ -38,7 +38,7 @@ xattr -dr com.apple.quarantine /Applications/Transcriber.app
 
 ### First launch
 
-- Transcriber downloads its speech models once, about 640 MB from Hugging Face. Use Wi-Fi; after that everything works offline.
+- Transcriber downloads its speech models once, about 640 MB from Hugging Face. Use Wi-Fi; after that everything works offline. You can record as soon as the download finishes.
 - The first time you record, macOS asks for the **microphone**: click Allow.
 - When the first transcript is saved, macOS asks for the **Documents** folder: click Allow.
 
@@ -53,7 +53,6 @@ You can also check by hand with **Transcriber → Check for Updates…** or by c
 - Sit near whoever is speaking. The built-in microphone works, but distance and noise lower the accuracy.
 - **Keep the lid open** while recording: a closed MacBook goes to sleep and the recording stops.
 - Plug in the charger for long lectures.
-- If you know how many people will speak, pick the number under **Speakers** before recording.
 - **Ask before you record**, and follow your university's rules about recording lectures.
 
 ## How well it works
@@ -62,17 +61,12 @@ Measured on a MacBook Air M4:
 
 - **Speed:** a 2-hour lecture becomes a transcript with speakers in about a minute and a half.
 - **Memory:** about 1 GB at most, while the final version is being created.
-- **Accuracy** on synthetic test audio, with English and Italian mixed: 0.6% to 1.6% of the words wrong in the final version, about 2% in the Automatic live draft.
+- **Accuracy** on synthetic test audio, with English and Italian mixed: 0.6% to 1.6% of the words wrong in the final version, about 2% in the live draft.
 - **Speakers:** in a test conversation with three voices, all 8 turns went to the right person, even with pauses of 0.3 seconds. On real meetings recorded with a single microphone (the AMI benchmark), the model mixes up who is speaking about 11% of the time.
 
-## Live draft modes
+## How it works
 
-The picker above the record button has three modes, and you can switch during a recording:
-
-- **Automatic** (default): the voice detector cuts the audio at pauses and Parakeet transcribes each sentence, detecting its language. The draft updates every 1–2 seconds.
-- **English** or **Italian**: the speech recognition built into macOS, word by word, in one language.
-
-The final version always detects the language by itself.
+While you record, the voice detector cuts the audio at pauses and Parakeet transcribes each sentence, detecting its language: the live draft updates every 1–2 seconds. When you stop, Transcriber goes over the whole recording again for the final version and tells the voices apart.
 
 ## Privacy
 
@@ -110,7 +104,7 @@ id: D9DF21CE-2F4E-4F0A-A800-0C0CB0D5D054
 
 - With a single microphone, speaker separation sometimes gets it wrong: similar voices, people talking over each other, one-word answers. The audio isn't kept, so you fix a wrong speaker by renaming.
 - Microphone only: no system audio from Zoom, Meet or Teams, and no importing audio files, for now.
-- In Automatic mode the live draft appears sentence by sentence instead of word by word.
+- The live draft appears sentence by sentence, every 1–2 seconds, instead of word by word.
 - Updates don't install by themselves: Transcriber downloads the new version, and you drag it into Applications.
 
 ## Build from source
@@ -144,11 +138,7 @@ build/Transcriber.app/Contents/MacOS/Transcriber --final lecture.wav --speakers 
 ```
 
 ```bash
-build/Transcriber.app/Contents/MacOS/Transcriber --live lecture.wav auto
-```
-
-```bash
-build/Transcriber.app/Contents/MacOS/Transcriber --assets --download
+build/Transcriber.app/Contents/MacOS/Transcriber --live lecture.wav
 ```
 
 `--check-update` asks GitHub for the newest version. `--pretend-version` makes the app look older, to try the update flow; it also works when you open the app with `open -n build/Transcriber.app --args --pretend-version 1.0.0`.
@@ -183,6 +173,5 @@ Transcriber is made by Matteo Firinaiu and is free and open source under the [MI
 - [Parakeet Ultra](https://huggingface.co/FluidInference/parakeet-ultra-coreml) (CC BY 4.0), based on NVIDIA Parakeet TDT 0.6B v3.
 - [Silero VAD](https://huggingface.co/FluidInference/silero-vad-coreml) (MIT), the voice detector.
 - The [pyannote "community-1"](https://huggingface.co/FluidInference/speaker-diarization-coreml) speaker models (CC BY 4.0).
-- Apple's Speech framework, for the English and Italian live drafts.
 
 Details in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The architecture was inspired by [pasrom/meeting-transcriber](https://github.com/pasrom/meeting-transcriber) (MIT).

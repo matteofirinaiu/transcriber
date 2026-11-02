@@ -18,6 +18,7 @@ public struct DraftSegment: Codable, Equatable, Sendable {
 public struct RecordingMeta: Codable, Equatable, Sendable {
     public var id: UUID
     public var startDate: Date
+    /// "auto": the live draft detects the language. Recordings from before 1.3.0 may say "en" or "it".
     public var draftLanguage: String
     /// The final version failed: the audio stays so it can be retried.
     public var finalFailed: Bool
@@ -26,7 +27,7 @@ public struct RecordingMeta: Codable, Equatable, Sendable {
 
     /// `id` also becomes the transcript's id, so a new attempt replaces the saved draft.
     public init(
-        id: UUID = UUID(), startDate: Date = Date(), draftLanguage: String, finalFailed: Bool = false,
+        id: UUID = UUID(), startDate: Date = Date(), draftLanguage: String = "auto", finalFailed: Bool = false,
         expectedSpeakers: Int? = nil
     ) {
         self.id = id

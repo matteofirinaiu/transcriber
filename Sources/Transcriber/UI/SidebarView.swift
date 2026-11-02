@@ -153,6 +153,8 @@ private struct RecorderRow: View {
                         .foregroundStyle(.secondary)
                 }
             }
+        } else if case .downloading(let fraction) = model.finalModel {
+            Label("Getting ready… \(Int(fraction * 100))%", systemImage: "arrow.down.circle")
         } else {
             Label("New Recording", systemImage: "mic")
         }

@@ -62,6 +62,8 @@ enum Autotest {
             snapshot("0-welcome", options, sheet: true)
             model.closeWelcome()
             try? await Task.sleep(for: .seconds(1))
+            snapshot("0-idle", options)
+            await snapshot("0-setup", options, view: ModelSetupView(state: .downloading(0.42), retry: {}), size: CGSize(width: 760, height: 560))
             model.updates.state = .available("9.9.9")
             await snapshot("0-footer-update", options, view: SidebarFooter().environment(model), size: CGSize(width: 280, height: 96))
             model.updates.state = .idle

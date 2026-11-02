@@ -2,11 +2,10 @@ import Foundation
 import os
 import TranscriberCore
 
-/// Terminal commands to try both engines without a microphone:
+/// Terminal commands to try the app without a microphone:
 ///
 ///     Transcriber.app/Contents/MacOS/Transcriber --final audio.wav [--speakers N | --no-speakers] [--words]
-///     Transcriber.app/Contents/MacOS/Transcriber --live audio.wav [auto|en|it]
-///     Transcriber.app/Contents/MacOS/Transcriber --assets [--download]
+///     Transcriber.app/Contents/MacOS/Transcriber --live audio.wav [--segments]
 ///     Transcriber.app/Contents/MacOS/Transcriber --check-update [--download] [--pretend-version 1.0.0]
 @MainActor
 enum CommandLineTool {
@@ -16,7 +15,7 @@ enum CommandLineTool {
         var errorDescription: String? { "The path of the audio file is missing." }
     }
 
-    nonisolated static let commands: Set<String> = ["--final", "--live", "--assets", "--check-update"]
+    nonisolated static let commands: Set<String> = ["--final", "--live", "--check-update"]
 
     static func run(_ arguments: [String]) async -> Int32 {
         do {
@@ -25,13 +24,11 @@ enum CommandLineTool {
                 let speakers = arguments.firstIndex(of: "--speakers").flatMap { arguments.indices.contains($0 + 1) ? Int(arguments[$0 + 1]) : nil }
                 try await final(path: arguments.dropFirst().first, expectedSpeakers: speakers)
             case "--live":
-                try await live(path: arguments.dropFirst().first, language: arguments.dropFirst(2).first)
-            case "--assets":
-                try await assets(download: arguments.contains("--download"))
+                try await live(path: arguments.dropFirst().first)
             case "--check-update":
                 try await checkUpdate(download: arguments.contains("--download"))
             default:
-                print("Usage: Transcriber --final file.wav [--speakers N | --no-speakers] [--words] | --live file.wav [auto|en|it] [--segments] | --assets [--download] | --check-update [--download] [--pretend-version X]")
+                print("Usage: Transcriber --final file.wav [--speakers N | --no-speakers] [--words] | --live file.wav [--segments] | --check-update [--download] [--pretend-version X]")
                 return 2
             }
             return 0
@@ -85,17 +82,15 @@ enum CommandLineTool {
                      diarizeElapsed, SpeakerNames.unique(labeled.compactMap(\.speaker)).joined(separator: ", "), spans.count))
     }
 
-    private static func live(path: String?, language: String?) async throws {
+    private static func live(path: String?) async throws {
         guard let path else { throw CLIError.missingFile }
-        let draftLanguage = DraftLanguage(rawValue: language ?? "auto") ?? .automatic
         let transcriber = LiveTranscriber(engine: ParakeetEngine())
         var segments: [DraftSegment] = []
         transcriber.onSegment = { segments.append($0) }
-        transcriber.onStatus = { status in if let status { print(status) } }
 
         let start = Date()
         var feed: LiveAudioSink?
-        try await transcriber.start(language: draftLanguage) { newFeed in
+        try await transcriber.start { newFeed in
             feed = newFeed
             return 0
         }
@@ -108,7 +103,7 @@ enum CommandLineTool {
             for segment in segments { print(String(format: "%7.2f %7.2f  %@", segment.start, segment.end, segment.text)) }
         }
         print("---")
-        print(String(format: "%@ draft in %.1f s, %d sentences", draftLanguage.label, Date().timeIntervalSince(start), segments.count))
+        print(String(format: "Live draft in %.1f s, %d sentences", Date().timeIntervalSince(start), segments.count))
     }
 
     private static func checkUpdate(download: Bool) async throws {
@@ -129,16 +124,6 @@ enum CommandLineTool {
             print("Downloaded: \(UpdateChecker.diskImage(for: latest).path)")
         } else {
             print("Download failed: \(checker.state)")
-        }
-    }
-
-    private static func assets(download: Bool) async throws {
-        for language in DraftLanguage.appleLanguages {
-            print("\(language.label): \(await LiveTranscriber.assetStatus(for: language))")
-            if download {
-                try await LiveTranscriber.installAssets(for: language) { status in if let status { print(status) } }
-                print("\(language.label): \(await LiveTranscriber.assetStatus(for: language))")
-            }
         }
     }
 }
