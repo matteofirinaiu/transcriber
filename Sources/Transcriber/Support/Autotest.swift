@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import TranscriberCore
 
 /// Automated test of the whole app:
@@ -61,6 +62,10 @@ enum Autotest {
             snapshot("0-welcome", options, sheet: true)
             model.closeWelcome()
             try? await Task.sleep(for: .seconds(1))
+            model.updates.state = .available("9.9.9")
+            await snapshot("0-footer-update", options, view: SidebarFooter().environment(model), size: CGSize(width: 280, height: 96))
+            model.updates.state = .idle
+            await snapshot("0-footer", options, view: SidebarFooter().environment(model), size: CGSize(width: 280, height: 44))
         }
         await model.startRecording()
         report["recordingStarted"] = model.phase == .recording
@@ -95,6 +100,27 @@ enum Autotest {
             try? data.write(to: options.reportURL)
         }
         NSApp.terminate(nil)
+    }
+
+    /// Shows a view on its own in a small window for a moment and takes its picture. The sidebar's glass
+    /// background comes out blank in pictures of the main window, and SwiftUI draws nothing off screen.
+    private static func snapshot(_ name: String, _ options: Options, view: some View, size: CGSize) async {
+        guard let directory = options.snapshotsURL else { return }
+        let host = NSHostingView(rootView: view.frame(width: size.width, height: size.height))
+        let window = NSWindow(contentRect: CGRect(origin: .zero, size: size), styleMask: .borderless, backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.backgroundColor = .windowBackgroundColor
+        window.contentView = host
+        window.center()
+        window.orderFrontRegardless()
+        try? await Task.sleep(for: .milliseconds(600))
+        let frame = host.superview ?? host
+        if let bitmap = frame.bitmapImageRepForCachingDisplay(in: frame.bounds) {
+            frame.cacheDisplay(in: frame.bounds, to: bitmap)
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try? bitmap.representation(using: .png, properties: [:])?.write(to: directory.appendingPathComponent("\(name).png"))
+        }
+        window.close()
     }
 
     /// Takes a picture of the main window, or of the sheet open on it (no screen recording permission needed).

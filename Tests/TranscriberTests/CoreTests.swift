@@ -352,6 +352,25 @@ import Testing
     }
 }
 
+@Suite struct AppVersionTests {
+    @Test func readsTheVersionFromTheReleasePage() {
+        #expect(AppVersion.fromReleaseTag("https://github.com/matteofirinaiu/transcriber/releases/tag/v1.2.0") == "1.2.0")
+        #expect(AppVersion.fromReleaseTag("v1.10.3") == "1.10.3")
+        // Without any release, GitHub sends you to the list of releases instead.
+        #expect(AppVersion.fromReleaseTag("https://github.com/matteofirinaiu/transcriber/releases") == nil)
+        #expect(AppVersion.fromReleaseTag("v1.2-beta") == nil)
+    }
+
+    @Test func comparesNumberByNumber() {
+        #expect(AppVersion.isNewer("1.2.0", than: "1.1.1"))
+        #expect(AppVersion.isNewer("1.10.0", than: "1.9.9"))
+        #expect(AppVersion.isNewer("2.0", than: "1.9.9"))
+        #expect(!AppVersion.isNewer("1.1.1", than: "1.1.1"))
+        #expect(!AppVersion.isNewer("1.2", than: "1.2.0"))
+        #expect(!AppVersion.isNewer("1.1.0", than: "1.2.0"))
+    }
+}
+
 @Suite struct LanguageGuessTests {
     @Test func findsEnglishAndItalian() {
         let languages = LanguageGuess.dominantLanguages(in: [

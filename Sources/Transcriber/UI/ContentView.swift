@@ -26,7 +26,10 @@ struct ContentView: View {
             if alert.opensMicrophoneSettings {
                 Button("Open System Settings") { Permissions.openMicrophoneSettings() }
             }
-            Button("OK", role: .cancel) {}
+            if alert.quitsApp {
+                Button("Quit Transcriber") { NSApp.terminate(nil) }
+            }
+            Button(alert.quitsApp ? "Later" : "OK", role: .cancel) {}
         } message: { alert in
             Text(alert.message)
         }

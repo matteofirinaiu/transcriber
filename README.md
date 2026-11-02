@@ -44,7 +44,9 @@ xattr -dr com.apple.quarantine /Applications/Transcriber.app
 
 ### Updating
 
-Download the new `Transcriber.dmg` from the same link and replace the app in Applications. You'll have to click Open Anyway and allow the microphone again. Your transcripts stay where they are.
+Transcriber checks for a new version when it opens and once a day. When one is out, you get a notification and an **Update** button at the bottom of the sidebar. Click it and Transcriber downloads the new version and opens it: quit Transcriber, drag the new one onto Applications and choose Replace. Updates don't need Open Anyway, but macOS asks for the microphone again. Your transcripts stay where they are.
+
+You can also check by hand with **Transcriber → Check for Updates…** or by clicking the version number in the sidebar, and turn the automatic check off in Settings. Versions before 1.2.0 can't do this: download 1.2.0 once from the link above.
 
 ## Tips for lectures
 
@@ -74,7 +76,7 @@ The final version always detects the language by itself.
 
 ## Privacy
 
-Recording, transcription and speaker separation all run on your Mac's Neural Engine. The app goes online only to download the models the first time. No accounts, no analytics.
+Recording, transcription and speaker separation all run on your Mac's Neural Engine. The app goes online only to download the models the first time and, unless you turn it off in Settings, to ask GitHub for the newest version number when it opens and once a day. Nothing about you or your recordings is sent. No accounts, no analytics.
 
 ## Where your files are
 
@@ -109,7 +111,7 @@ id: D9DF21CE-2F4E-4F0A-A800-0C0CB0D5D054
 - With a single microphone, speaker separation sometimes gets it wrong: similar voices, people talking over each other, one-word answers. The audio isn't kept, so you fix a wrong speaker by renaming.
 - Microphone only: no system audio from Zoom, Meet or Teams, and no importing audio files, for now.
 - In Automatic mode the live draft appears sentence by sentence instead of word by word.
-- No automatic updates: get new versions from the same download link.
+- Updates don't install by themselves: Transcriber downloads the new version, and you drag it into Applications.
 
 ## Build from source
 
@@ -148,6 +150,14 @@ build/Transcriber.app/Contents/MacOS/Transcriber --live lecture.wav auto
 ```bash
 build/Transcriber.app/Contents/MacOS/Transcriber --assets --download
 ```
+
+`--check-update` asks GitHub for the newest version. `--pretend-version` makes the app look older, to try the update flow; it also works when you open the app with `open -n build/Transcriber.app --args --pretend-version 1.0.0`.
+
+```bash
+build/Transcriber.app/Contents/MacOS/Transcriber --check-update --pretend-version 1.0.0
+```
+
+Releases must be tagged `vX.Y.Z` and carry a file named exactly `Transcriber.dmg`: the update check reads the tag of the latest release and downloads that file.
 
 There's also an automated test of the whole app. It plays an audio file instead of the microphone and saves the transcripts in a separate folder. Don't run it while you're recording with the app, because it opens a second copy:
 

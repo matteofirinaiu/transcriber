@@ -40,6 +40,7 @@ struct AppAlert: Identifiable {
     let title: String
     let message: String
     var opensMicrophoneSettings = false
+    var quitsApp = false
 }
 
 @MainActor
@@ -80,6 +81,7 @@ final class AppModel {
     var alert: AppAlert?
     /// The welcome pop-up, shown only at the first launch.
     var showWelcome = false
+    let updates = UpdateChecker()
 
     // MARK: Recording
 
@@ -131,6 +133,8 @@ final class AppModel {
         downloadModelsIfNeeded()
         if let options = Autotest.options {
             Task { await Autotest.run(self, options) }
+        } else {
+            updates.start()
         }
     }
 
@@ -138,6 +142,21 @@ final class AppModel {
     func closeWelcome() {
         showWelcome = false
         if Autotest.options == nil { UserDefaults.standard.set(true, forKey: Keys.welcomeShown) }
+    }
+
+    /// Downloads the new version and explains how to finish installing it.
+    func downloadUpdate() async {
+        await updates.download()
+        if case .downloaded(let version) = updates.state { finishUpdate(version) }
+    }
+
+    /// Opens the downloaded disk image and shows the last steps, which need the user: the running app can't replace itself.
+    func finishUpdate(_ version: String) {
+        updates.openDownload(version)
+        alert = AppAlert(
+            title: "Almost done",
+            message: "Transcriber \(version) is in the window that just opened. Quit Transcriber, drag the new Transcriber onto Applications and choose Replace, then open it again. Your transcripts stay where they are.",
+            quitsApp: true)
     }
 
     // MARK: - Library

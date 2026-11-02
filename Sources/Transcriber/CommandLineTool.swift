@@ -7,6 +7,7 @@ import TranscriberCore
 ///     Transcriber.app/Contents/MacOS/Transcriber --final audio.wav [--speakers N | --no-speakers] [--words]
 ///     Transcriber.app/Contents/MacOS/Transcriber --live audio.wav [auto|en|it]
 ///     Transcriber.app/Contents/MacOS/Transcriber --assets [--download]
+///     Transcriber.app/Contents/MacOS/Transcriber --check-update [--download] [--pretend-version 1.0.0]
 @MainActor
 enum CommandLineTool {
     enum CLIError: LocalizedError {
@@ -15,7 +16,7 @@ enum CommandLineTool {
         var errorDescription: String? { "The path of the audio file is missing." }
     }
 
-    nonisolated static let commands: Set<String> = ["--final", "--live", "--assets"]
+    nonisolated static let commands: Set<String> = ["--final", "--live", "--assets", "--check-update"]
 
     static func run(_ arguments: [String]) async -> Int32 {
         do {
@@ -27,8 +28,10 @@ enum CommandLineTool {
                 try await live(path: arguments.dropFirst().first, language: arguments.dropFirst(2).first)
             case "--assets":
                 try await assets(download: arguments.contains("--download"))
+            case "--check-update":
+                try await checkUpdate(download: arguments.contains("--download"))
             default:
-                print("Usage: Transcriber --final file.wav [--speakers N | --no-speakers] [--words] | --live file.wav [auto|en|it] [--segments] | --assets [--download]")
+                print("Usage: Transcriber --final file.wav [--speakers N | --no-speakers] [--words] | --live file.wav [auto|en|it] [--segments] | --assets [--download] | --check-update [--download] [--pretend-version X]")
                 return 2
             }
             return 0
@@ -106,6 +109,27 @@ enum CommandLineTool {
         }
         print("---")
         print(String(format: "%@ draft in %.1f s, %d sentences", draftLanguage.label, Date().timeIntervalSince(start), segments.count))
+    }
+
+    private static func checkUpdate(download: Bool) async throws {
+        let current = UpdateChecker.currentVersion
+        let latest = try await UpdateChecker.latestVersion()
+        print("This version: \(current)")
+        print("Latest on GitHub: \(latest ?? "none")")
+        guard let latest, AppVersion.isNewer(latest, than: current) else {
+            print("Up to date")
+            return
+        }
+        print("Update available")
+        guard download else { return }
+        let checker = UpdateChecker()
+        checker.state = .available(latest)
+        await checker.download()
+        if checker.state == .downloaded(latest) {
+            print("Downloaded: \(UpdateChecker.diskImage(for: latest).path)")
+        } else {
+            print("Download failed: \(checker.state)")
+        }
     }
 
     private static func assets(download: Bool) async throws {

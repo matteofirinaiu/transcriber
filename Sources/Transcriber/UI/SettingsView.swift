@@ -9,6 +9,7 @@ struct SettingsView: View {
 
     var body: some View {
         @Bindable var model = model
+        @Bindable var updates = model.updates
         Form {
             Section("Recording") {
                 Picker("Default draft language", selection: $model.draftLanguage) {
@@ -33,6 +34,15 @@ struct SettingsView: View {
                         NSWorkspace.shared.open(model.transcriptsFolder)
                     }
                 }
+            }
+
+            Section {
+                Toggle("Check for updates automatically", isOn: $updates.automaticChecks)
+            } header: {
+                Text("Updates")
+            } footer: {
+                Text("When it opens and once a day, Transcriber asks GitHub for the number of the newest version. Nothing about you or your recordings is sent.")
+                    .foregroundStyle(.secondary)
             }
 
             Section {

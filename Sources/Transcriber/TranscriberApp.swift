@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UserNotifications
 
 struct TranscriberApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
@@ -13,6 +14,11 @@ struct TranscriberApp: App {
         }
         .defaultSize(width: 1_000, height: 680)
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") {
+                    Task { await model.updates.check(userInitiated: true) }
+                }
+            }
             CommandGroup(replacing: .newItem) {
                 Button(model.phase == .recording ? "Stop Recording" : "New Recording") {
                     Task { await model.toggleRecording() }
@@ -36,9 +42,18 @@ struct TranscriberApp: App {
     }
 }
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        UNUserNotificationCenter.current().delegate = self
         AppModel.shared.launch()
+    }
+
+    /// Shows the update notification even while Transcriber is in front.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .list])
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
